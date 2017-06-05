@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js">
+    </script>
+
+</head>
+<body class="container">
+<table>
+    <tbody id="area">
+
+    </tbody>
+</table>
+<script>
+
+    var countries = ['France', 'Spain', 'Portugal'];
+
+    $(document).ready(function () {
+        var body = $('#area');
+        for (var i = 1; i < 11; i++) {
+            var row = $('<tr></tr>');
+            row.appendTo(body);
+            for (var j = 1; j < 11; j++) {
+                row.append('<td id="' + i + '-' + j + '" style="width:90px; height: 90px; border: 1px solid black"></td>');
+            }
+        }
+
+        createCountry(1, 4, 4, 6, 'blue', 'France');
+        createCountry(3, 1, 6, 3, 'yellow', 'Spain');
+        createCountry(1, 1, 2, 2, 'orange', 'Portugal');
+        var filled = {
+            'France': false,
+            'Spain': false,
+            'Portugal': false
+        };
+        var i = 0;
+        while (filled.France == false || filled.Spain == false || filled.Portugal == false) {
+            i++;
+            sendCoins();
+
+            countries.forEach(function (country, index, arr) {
+                var cities = $('.' + country);
+                var countryFilled = true;
+                for (var j = 0; j < cities.length; j++) {
+                    if ($(cities[j]).attr('filled') == 'false') {
+                        countryFilled = false;
+                    }
+                }
+                if (countryFilled == true && filled[country] == false) {
+                    filled[country] = i;
+                }
+            });
+
+        }
+
+        console.log(filled);
+    });
+
+    function createCountry(xl, yl, xh, yh, color, country) {
+        if (checkCoords(xl, yl, xh, yh)) {
+            console.log('good');
+        } else {
+            console.log('bad');
+        }
+
+        for (var i = xl; i <= xh; i++) {
+            for (var j = yl; j <= yh; j++) {
+                var city = $('#' + i + '-' + j);
+                city
+                    .css('background-color', color)
+                    .addClass('city')
+                    .addClass(country)
+                    .attr('country', country)
+                    .attr('filled', false)
+                    .attr(country + '-coins', 1000000);
+                var label = '';
+                for (var k = 0; k < countries.length; k++) {
+                    if (city.attr('country') == countries[k]) {
+                        city.attr(countries[k] + '-coins', 1000000);
+                    } else {
+                        city.attr(countries[k] + '-coins', 0);
+                    }
+                    label += countries[k] + '-coins' + '=' + city.attr(countries[k] + '-coins') + '\n';
+                    city.html(label);
+                }
+            }
+        }
+    }
+
+    function sendCoins() {
+        var cities = $('.city');
+
+        for (var i = 0; i < cities.length; i++) {
+            cities[i].neighbors = neighbors(cities[i].id);
+            countries.forEach(function (country, index, arr) {
+                $(cities[i]).attr(country + '-transaction-amount', Math.floor($(cities[i]).attr(country + '-coins') / 1000));
+            });
+        }
+
+        for (var i = 0; i < cities.length; i++) {
+            cities[i].neighbors.forEach(function (neighbor, index, arr) {
+                countries.forEach(function (country, index, arr) {
+                    var neighborCoins = parseInt(neighbor.attr(country + '-coins'));
+                    var ownCoins = parseInt($(cities[i]).attr(country + '-coins'));
+                    var transactionAmount = parseInt($(cities[i]).attr(country + '-transaction-amount'));
+
+                    neighbor.attr(country + '-coins', neighborCoins + transactionAmount);
+                    $(cities[i]).attr(country + '-coins', ownCoins - transactionAmount);
+                });
+            });
+        }
+
+        for (var i = 0; i < cities.length; i++) {
+            var label = '';
+            var cityFilled = true;
+            for (var k = 0; k < countries.length; k++) {
+                label += countries[k] + '-coins' + '=' + $(cities[i]).attr(countries[k] + '-coins') + '\n';
+
+                if ($(cities[i]).attr(countries[k] + '-coins') == 0) {
+                    cityFilled = false;
+                }
+            }
+            $(cities[i]).html(label);
+            $(cities[i]).attr('filled', cityFilled);
+        }
+    }
+
+    function neighbors(cityId) {
+        var coords = cityId.split('-');
+
+        var neighbors = [];
+
+        if ($('#' + (parseInt(coords[0]) + 1) + '-' + (parseInt(coords[1]))).hasClass('city')) {
+            neighbors.push($('#' + (parseInt(coords[0]) + 1) + '-' + (parseInt(coords[1]))));
+        }
+        if ($('#' + (parseInt(coords[0]) - 1) + '-' + (parseInt(coords[1]))).hasClass('city')) {
+            neighbors.push($('#' + (parseInt(coords[0]) - 1) + '-' + (parseInt(coords[1]))));
+        }
+        if ($('#' + (parseInt(coords[0])) + '-' + (parseInt(coords[1]) + 1)).hasClass('city')) {
+            neighbors.push($('#' + (parseInt(coords[0])) + '-' + (parseInt(coords[1]) + 1)));
+        }
+        if ($('#' + (parseInt(coords[0])) + '-' + (parseInt(coords[1]) - 1)).hasClass('city')) {
+            neighbors.push($('#' + (parseInt(coords[0])) + '-' + (parseInt(coords[1]) - 1)));
+        }
+
+        return neighbors;
+    }
+
+
+    function checkCoords(xl, yl, xh, yh) {
+        var args = Array.prototype.slice.call(arguments);
+        var ok = true;
+        args.forEach(function (item, index, arr) {
+            if (item < 1 || item > 10) {
+                ok = false;
+            }
+        });
+
+        if (xl > xh || yl > yh) {
+            ok = false;
+        }
+
+        return ok;
+    }
+</script>
+</body>
+</html>
